@@ -74,21 +74,28 @@ class TaskController extends AbstractController
      */
     public function editAction(Request $request, Task $task, TaskRepository $taskRepository): Response
     {
-        $form = $this->createForm(TaskType::class, $task);
-        $form->handleRequest($request);
+        $user = $this->getUser();
+        $userTask = $task->getUser();
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $taskRepository->add($task, true);
+        if($user === $userTask) {
+            $form = $this->createForm(TaskType::class, $task);
+            $form->handleRequest($request);
 
-            $this->addFlash('success', 'La tâche a bien été modifiée.');
+            if ($form->isSubmitted() && $form->isValid()) {
+                $taskRepository->add($task, true);
 
-            return $this->redirectToRoute('task_list', [], Response::HTTP_SEE_OTHER);
+                $this->addFlash('success', 'La tâche a bien été modifiée.');
+
+                return $this->redirectToRoute('task_list', [], Response::HTTP_SEE_OTHER);
+            }
+
+            return $this->renderForm('task/edit.html.twig', [
+                'task' => $task,
+                'form' => $form,
+            ]);
         }
 
-        return $this->renderForm('task/edit.html.twig', [
-            'task' => $task,
-            'form' => $form,
-        ]);
+        return new Response("Vous n'avez pas accès à cette page", 400);
     }
 
     /**
