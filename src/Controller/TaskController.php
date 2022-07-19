@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Task;
+use App\Entity\User;
 use App\Form\TaskType;
 use App\Repository\TaskRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -30,22 +31,32 @@ class TaskController extends AbstractController
      */
     public function createAction(Request $request, TaskRepository $taskRepository): Response
     {
-        $task = new Task();
-        $form = $this->createForm(TaskType::class, $task);
-        $form->handleRequest($request);
+        $user = $this->getUser();
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $taskRepository->add($task, true);
+        if($user) {
+            $task = new Task();
+            $form = $this->createForm(TaskType::class, $task);
+            $form->handleRequest($request);
 
-            $this->addFlash('success', 'La tâche a été bien été ajoutée.');
+            if ($form->isSubmitted() && $form->isValid()) {
+                /** @var User $user */
+                $user = $this->getUser();
+                $task->setUser($user);
 
-            return $this->redirectToRoute('task_list', [], Response::HTTP_SEE_OTHER);
+                $taskRepository->add($task, true);
+
+                $this->addFlash('success', 'La tâche a été bien été ajoutée.');
+
+                return $this->redirectToRoute('task_list', [], Response::HTTP_SEE_OTHER);
+            }
+
+            return $this->renderForm('task/create.html.twig', [
+                'task' => $task,
+                'form' => $form,
+            ]);
         }
 
-        return $this->renderForm('task/create.html.twig', [
-            'task' => $task,
-            'form' => $form,
-        ]);
+        return new Response("Vous n'avez pas accès à cette page", 400);
     }
 
 //    /**
@@ -94,7 +105,7 @@ class TaskController extends AbstractController
     }
 
     /**
-     * @Route("/{id}/delete", name="task_delete", methods={"POST"})
+     * @Route("/{id}/delete", name="task_delete", methods={"GET"})
      */
     public function deleteTaskAction(Request $request, Task $task, TaskRepository $taskRepository): Response
     {
