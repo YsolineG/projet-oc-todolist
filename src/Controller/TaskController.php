@@ -116,12 +116,19 @@ class TaskController extends AbstractController
      */
     public function deleteTaskAction(Request $request, Task $task, TaskRepository $taskRepository): Response
     {
-//        if ($this->isCsrfTokenValid('delete'.$task->getId(), $request->request->get('_token'))) {
+        $user = $this->getUser();
+        $userTask = $task->getUser();
+
+        if($user === $userTask) {
+            //        if ($this->isCsrfTokenValid('delete'.$task->getId(), $request->request->get('_token'))) {
             $taskRepository->remove($task, true);
 //        }
 
-        $this->addFlash('success', 'La tâche a bien été supprimée.');
+            $this->addFlash('success', 'La tâche a bien été supprimée.');
 
-        return $this->redirectToRoute('task_list', [], Response::HTTP_SEE_OTHER);
+            return $this->redirectToRoute('task_list', [], Response::HTTP_SEE_OTHER);
+        }
+
+        return new Response("Vous n'avez pas accès à cette page", Response::HTTP_UNAUTHORIZED);
     }
 }
