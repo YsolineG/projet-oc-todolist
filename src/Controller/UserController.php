@@ -54,16 +54,6 @@ class UserController extends AbstractController
         ]);
     }
 
-//    /**
-//     * @Route("/{id}", name="app_user_show", methods={"GET"})
-//     */
-//    public function show(User $user): Response
-//    {
-//        return $this->render('user/list.html.twig', [
-//            'user' => $user,
-//        ]);
-//    }
-
     /**
      * @Route("/{id}/edit", name="user_edit", methods={"GET", "POST"})
      */
@@ -75,6 +65,8 @@ class UserController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $plaintextPassword = $user->getPassword();
             $user->setPassword($passwordHasher->hashPassword($user, $plaintextPassword));
+            $roles[]=$request->request->get('role');
+            $user->setRoles($roles);
 
             $userRepository->add($user, true);
 
@@ -88,16 +80,4 @@ class UserController extends AbstractController
             'form' => $form,
         ]);
     }
-
-//    /**
-//     * @Route("/{id}", name="app_user_delete", methods={"POST"})
-//     */
-//    public function delete(Request $request, User $user, UserRepository $userRepository): Response
-//    {
-//        if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->request->get('_token'))) {
-//            $userRepository->remove($user, true);
-//        }
-//
-//        return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
-//    }
 }
