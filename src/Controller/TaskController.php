@@ -6,6 +6,7 @@ use App\Entity\Task;
 use App\Entity\User;
 use App\Form\TaskType;
 use App\Repository\TaskRepository;
+use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,12 +20,23 @@ class TaskController extends AbstractController
     /**
      * @Route("/", name="task_list", methods={"GET"})
      */
-    public function listAction(TaskRepository $taskRepository): Response
+    public function listAction(TaskRepository $taskRepository, UserRepository $userRepository): Response
     {
         $user = $this->getUser();
 
         if($user) {
             $tasks = $user->getTasks();
+
+            if(in_array("ROLE_ADMIN", $user->getRoles())) {
+                $anonymousUser = $userRepository->getAnonymousUser();
+
+                $anonymousTasks = $taskRepository->findBy([
+                    'user' => $anonymousUser
+                ]);
+
+                $tasks = array_merge($tasks->toArray(), $anonymousTasks);
+            }
+
             return $this->render('task/list.html.twig', [
                 'tasks' => $tasks,
             ]);
@@ -65,16 +77,6 @@ class TaskController extends AbstractController
 
         return new Response("Vous n'avez pas accès à cette page", 400);
     }
-
-//    /**
-//     * @Route("/{id}", name="app_task_show", methods={"GET"})
-//     */
-//    public function show(Task $task): Response
-//    {
-//        return $this->render('task/list.html.twig', [
-//            'task' => $task,
-//        ]);
-//    }
 
     /**
      * @Route("/{id}/edit", name="task_edit", methods={"GET", "POST"})
@@ -121,15 +123,12 @@ class TaskController extends AbstractController
     /**
      * @Route("/{id}/delete", name="task_delete", methods={"GET"})
      */
-    public function deleteTaskAction(Request $request, Task $task, TaskRepository $taskRepository): Response
+    public function deleteTaskAction(Request $request, Task $task, TaskRepository $taskRepository, UserRepository $userRepository): Response
     {
         $user = $this->getUser();
         $userTask = $task->getUser();
-
-        if($user === $userTask) {
-            //        if ($this->isCsrfTokenValid('delete'.$task->getId(), $request->request->get('_token'))) {
+        if($user === $userTask || in_array("ROLE_ADMIN", $user->getRoles())) {
             $taskRepository->remove($task, true);
-//        }
 
             $this->addFlash('success', 'La tâche a bien été supprimée.');
 

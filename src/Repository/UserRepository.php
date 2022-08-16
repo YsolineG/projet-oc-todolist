@@ -56,6 +56,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->add($user, true);
     }
 
+    public function getAnonymousUser()
+    {
+        return $this->createQueryBuilder('user')
+            ->where('user.roles LIKE :role')
+            ->setParameter('role', '%"' . User::ROLE_ANONYMOUS . '"%')
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
 //    /**
 //     * @return User[] Returns an array of User objects
 //     */
