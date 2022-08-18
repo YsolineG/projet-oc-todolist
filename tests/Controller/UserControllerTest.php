@@ -13,7 +13,7 @@ class UserControllerTest extends WebTestCase
     private $client;
     /** @var UserRepository */
     private $repository;
-    private $path = '/user/';
+    private $path = '/users/';
 
     protected function setUp(): void
     {
@@ -27,6 +27,9 @@ class UserControllerTest extends WebTestCase
 
     public function testIndex(): void
     {
+        $testUser = $this->repository->findBy(['email' => 'paul@test.com']);
+        $this->client->loginUser($testUser);
+
         $crawler = $this->client->request('GET', $this->path);
 
         self::assertResponseStatusCodeSame(200);
