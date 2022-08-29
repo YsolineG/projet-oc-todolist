@@ -135,7 +135,7 @@ class TaskController extends AbstractController
     /**
      * @Route("/{id}/delete", name="task_delete", methods={"GET"})
      */
-    public function deleteTaskAction(Request $request, Task $task, TaskRepository $taskRepository, UserRepository $userRepository): Response
+    public function deleteTaskAction(Task $task, TaskRepository $taskRepository): Response
     {
         $user = $this->getUser();
         $userTask = $task->getUser();
