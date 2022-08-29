@@ -75,7 +75,7 @@ class TaskController extends AbstractController
             ]);
         }
 
-        return new Response("Vous n'avez pas accès à cette page", 400);
+        return $this->redirectToRoute('app_login', [], Response::HTTP_SEE_OTHER);
     }
 
     /**
@@ -104,7 +104,7 @@ class TaskController extends AbstractController
             ]);
         }
 
-        return new Response("Vous n'avez pas accès à cette page", 400);
+        return new Response("Vous n'avez pas accès à cette page", Response::HTTP_UNAUTHORIZED);
     }
 
     /**
@@ -112,12 +112,24 @@ class TaskController extends AbstractController
      */
     public function toggleTaskAction(Task $task, TaskRepository $taskRepository): \Symfony\Component\HttpFoundation\RedirectResponse
     {
-        $task->toggle(!$task->isIsDone());
-        $taskRepository->add($task, true);
+        $user = $this->getUser();
+        $userTask = $task->getUser();
 
-        $this->addFlash('success', sprintf('La tâche %s a bien été marquée comme faite.', $task->getTitle()));
+        if($user) {
+            if($user === $userTask) {
+                $task->toggle(!$task->isIsDone());
+                $taskRepository->add($task, true);
 
-        return $this->redirectToRoute('task_list');
+                $this->addFlash('success', sprintf('La tâche %s a bien été marquée comme faite.', $task->getTitle()));
+
+                return $this->redirectToRoute('task_list');
+            }
+
+            $this->addFlash('error', "Vous n'avez pas accès à cette tâche.");
+            return $this->redirectToRoute('task_list');
+        }
+
+        return $this->redirectToRoute('app_login');
     }
 
     /**
@@ -127,7 +139,7 @@ class TaskController extends AbstractController
     {
         $user = $this->getUser();
         $userTask = $task->getUser();
-        if($user === $userTask || in_array("ROLE_ADMIN", $user->getRoles())) {
+        if($user && ($user === $userTask || in_array("ROLE_ADMIN", $user->getRoles()))) {
             $taskRepository->remove($task, true);
 
             $this->addFlash('success', 'La tâche a bien été supprimée.');
