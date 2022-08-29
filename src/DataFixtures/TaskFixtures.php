@@ -20,6 +20,15 @@ class TaskFixtures extends Fixture implements DependentFixtureInterface
 
         $manager->persist($task);
 
+        $taskAnonymous = new Task();
+        $taskAnonymous->setTitle('Tâche 2');
+        $taskAnonymous->setContent('Tâche 2');
+        $taskAnonymous->setIsDone(0);
+        $taskAnonymous->setCreatedAt(new \DateTimeImmutable('now'));
+        $taskAnonymous->setUser($this->getReference(UserFixtures::USER_ANONYMOUS));
+
+        $manager->persist($taskAnonymous);
+
         $manager->flush();
     }
 

@@ -15,6 +15,7 @@ class UserFixtures extends Fixture
     private $hasher;
 
     public const USER_REFERENCE = 'user-paul';
+    public const USER_ANONYMOUS = 'user-anonymous';
 
     public function __construct(UserPasswordHasherInterface $hasher)
     {
@@ -41,6 +42,16 @@ class UserFixtures extends Fixture
         $userAdmin->setPassword($password);
 
         $manager->persist($userAdmin);
+
+        $userAnonymous = new User();
+        $userAnonymous->setUsername('Anonymous');
+        $userAnonymous->setEmail('anonymous@test.com');
+        $userAnonymous->setRoles(['ROLE_ANONYMOUS']);
+        $password = $this->hasher->hashPassword($userAnonymous, 'test');
+        $userAnonymous->setPassword($password);
+        $this->addReference(self::USER_ANONYMOUS, $userAnonymous);
+
+        $manager->persist($userAnonymous);
 
         $manager->flush();
     }
