@@ -58,7 +58,7 @@ class TaskControllerTest extends WebTestCase
         self::assertSelectorTextContains('label', "Nom d'utilisateur :");
     }
 
-    public function testIndexAdmin(): void
+    public function testIndexIfAdminConnected(): void
     {
         /** @var UserRepository $userRepository */
         $userRepository = static::getContainer()->get(UserRepository::class);
@@ -126,7 +126,7 @@ class TaskControllerTest extends WebTestCase
         self::assertSame('Something New', $fixture[0]->getContent());
     }
 
-    public function testEditError(): void
+    public function testEditIfUserNotConnected(): void
     {
         $this->databaseTool->loadFixtures([
             TaskFixtures::class
@@ -180,7 +180,7 @@ class TaskControllerTest extends WebTestCase
         self::assertFalse($fixture[1]->isIsDone());
     }
 
-    public function testToggleError(): void
+    public function testToggleIfUserNotConnected(): void
     {
         $this->databaseTool->loadFixtures([
             TaskFixtures::class
@@ -203,16 +203,16 @@ class TaskControllerTest extends WebTestCase
         $testUser = $userRepository->findOneBy(['email' => 'paul@test.com']);
         $this->client->loginUser($testUser);
 
-        $originalNumObjectsInRepository = count($this->repository->findAll());
+        $numObjsInRepo = count($this->repository->findAll());
 
         $this->client->request('GET', sprintf('%s', $this->path));
         $this->client->submitForm('Supprimer', [], 'GET');
 
-        self::assertCount($originalNumObjectsInRepository - 1, $this->repository->findAll());
+        self::assertCount($numObjsInRepo - 1, $this->repository->findAll());
         self::assertResponseRedirects('/tasks/');
     }
 
-    public function testRemoveError(): void
+    public function testRemoveIfUserNotConnected(): void
     {
         $this->databaseTool->loadFixtures([
             TaskFixtures::class

@@ -56,7 +56,7 @@ class UserControllerTest extends WebTestCase
         $testUser = $this->repository->findOneBy(['email' => 'admin@test.com']);
         $this->client->loginUser($testUser);
 
-        $originalNumObjectsInRepository = count($this->repository->findAll());
+        $numObjsInRepo = count($this->repository->findAll());
 
         $this->client->request('GET', sprintf('%screate', $this->path));
 
@@ -71,7 +71,7 @@ class UserControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/users/');
 
-        self::assertCount($originalNumObjectsInRepository + 1, $this->repository->findAll());
+        self::assertCount($numObjsInRepo + 1, $this->repository->findAll());
     }
 
     public function testEdit(): void
