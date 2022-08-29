@@ -11,6 +11,7 @@ use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Liip\TestFixturesBundle\Services\DatabaseTools\AbstractDatabaseTool;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Response;
 
 class TaskControllerTest extends WebTestCase
 {
@@ -30,10 +31,6 @@ class TaskControllerTest extends WebTestCase
         $this->databaseTool->loadFixtures([
             UserFixtures::class
         ]);
-
-        foreach ($this->repository->findAll() as $object) {
-            $this->repository->remove($object, true);
-        }
     }
 
     public function testIndex(): void
@@ -52,13 +49,26 @@ class TaskControllerTest extends WebTestCase
         // self::assertSame('Some text on the page', $crawler->filter('.p')->first());
     }
 
-    public function testIndexRedirect(): void
+    public function testIndexRedirectLogin(): void
     {
         $this->client->followRedirects();
         $this->client->request('GET', $this->path);
 
         self::assertResponseStatusCodeSame(200);
         self::assertSelectorTextContains('label', "Nom d'utilisateur :");
+    }
+
+    public function testIndexAdmin(): void
+    {
+        /** @var UserRepository $userRepository */
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $testUser = $userRepository->findOneBy(['email' => 'admin@test.com']);
+        $this->client->loginUser($testUser);
+
+        $this->client->request('GET', $this->path);
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertPageTitleContains('To Do List app');
     }
 
     public function testNew(): void
@@ -80,6 +90,13 @@ class TaskControllerTest extends WebTestCase
         self::assertResponseRedirects('/tasks/');
 
         self::assertCount(1, $this->repository->findAll());
+    }
+
+    public function testNewRedirectLogin(): void
+    {
+        $this->client->request('GET', sprintf('%screate', $this->path));
+
+        self::assertResponseRedirects('/login');
     }
 
     public function testEdit(): void
@@ -109,6 +126,72 @@ class TaskControllerTest extends WebTestCase
         self::assertSame('Something New', $fixture[0]->getContent());
     }
 
+    public function testEditError(): void
+    {
+        $this->databaseTool->loadFixtures([
+            TaskFixtures::class
+        ]);
+
+        $task = $this->repository->findOneBy(['title' => 'Tâche 1']);
+        $this->client->request('GET', sprintf('%s%s/edit', $this->path, $task->getId()));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+    }
+
+    public function testToggle(): void
+    {
+        $this->databaseTool->loadFixtures([
+            TaskFixtures::class
+        ]);
+
+        /** @var UserRepository $userRepository */
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $testUser = $userRepository->findOneBy(['email' => 'paul@test.com']);
+        $this->client->loginUser($testUser);
+
+        $this->client->request('GET', sprintf('%s', $this->path));
+
+        $this->client->submitForm('Marquer comme faite', [], 'GET');
+
+        self::assertResponseRedirects('/tasks/');
+
+        $fixture = $this->repository->findAll();
+
+        self::assertTrue($fixture[0]->isIsDone());
+    }
+
+    public function testUserCanOnlyMarkAsDoneHisOwnTasks(): void
+    {
+        $this->databaseTool->loadFixtures([
+            TaskFixtures::class
+        ]);
+
+        /** @var UserRepository $userRepository */
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $testUser = $userRepository->findOneBy(['email' => 'paul@test.com']);
+        $this->client->loginUser($testUser);
+
+        $task = $this->repository->findOneBy(['title' => 'Tâche 2']);
+        $this->client->request('GET', sprintf('%s%s/toggle', $this->path, $task->getId()));
+
+        self::assertResponseRedirects('/tasks/');
+
+        $fixture = $this->repository->findAll();
+        self::assertFalse($fixture[1]->isIsDone());
+    }
+
+    public function testToggleError(): void
+    {
+        $this->databaseTool->loadFixtures([
+            TaskFixtures::class
+        ]);
+
+        $task = $this->repository->findOneBy(['title' => 'Tâche 2']);
+        $this->client->request('GET', sprintf('%s%s/toggle', $this->path, $task->getId()));
+
+        self::assertResponseRedirects('/login');
+    }
+
     public function testRemove(): void
     {
         $this->databaseTool->loadFixtures([
@@ -120,12 +203,24 @@ class TaskControllerTest extends WebTestCase
         $testUser = $userRepository->findOneBy(['email' => 'paul@test.com']);
         $this->client->loginUser($testUser);
 
-        self::assertCount(1, $this->repository->findAll());
+        $originalNumObjectsInRepository = count($this->repository->findAll());
 
         $this->client->request('GET', sprintf('%s', $this->path));
         $this->client->submitForm('Supprimer', [], 'GET');
 
-        self::assertCount(0, $this->repository->findAll());
+        self::assertCount($originalNumObjectsInRepository - 1, $this->repository->findAll());
         self::assertResponseRedirects('/tasks/');
+    }
+
+    public function testRemoveError(): void
+    {
+        $this->databaseTool->loadFixtures([
+            TaskFixtures::class
+        ]);
+
+        $task = $this->repository->findOneBy(['title' => 'Tâche 2']);
+        $this->client->request('GET', sprintf('%s%s/delete', $this->path, $task->getId()));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 }
