@@ -45,8 +45,11 @@ To Do List is a Symfony project for my Openclassrooms training.
 3.  Create the tables/columns in the test database : `php bin/console --env=test doctrine:schema:create`
 
 
-4. Run the tests : `php bin/phpunit`
+4.  Fill the database with fixtures : `php bin/console --env=test doctrine:fixtures:load`
 
 
-5. Run the coverage : `php bin/phpunit --coverage-html coverage`
+5.  Run the tests : `php bin/phpunit`
+
+
+6.  Run the coverage : `php bin/phpunit --coverage-html coverage`
 
