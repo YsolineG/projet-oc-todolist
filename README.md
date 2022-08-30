@@ -11,7 +11,7 @@ To Do List is a Symfony project for my Openclassrooms training.
 ## Prerequisite
 
 -   PHP 7.2.5 minimum
--   MySQL 
+-   MySQL 5.7
 -   Composer
 
 ## Installation
