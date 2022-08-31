@@ -22,6 +22,7 @@ To ensure the quality and maintainability of the project, some coding style must
     -   Class names must be written in UpperCamelCase
     -   The names of methods and properties must be written in camelCase
     
+
 -   The code should stick to the [Symfony coding standards](https://symfony.com/doc/4.4/contributing/code/standards.html)
 
 ## Testing
