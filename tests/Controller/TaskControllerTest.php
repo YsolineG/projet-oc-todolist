@@ -212,6 +212,26 @@ class TaskControllerTest extends WebTestCase
         self::assertResponseRedirects('/tasks/');
     }
 
+    public function testRemoveIfAdminIsConnected(): void
+    {
+        $this->databaseTool->loadFixtures([
+            TaskFixtures::class
+        ]);
+
+        /** @var UserRepository $userRepository */
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $testUser = $userRepository->findOneBy(['email' => 'admin@test.com']);
+        $this->client->loginUser($testUser);
+
+        $numObjsInRepo = count($this->repository->findAll());
+
+        $this->client->request('GET', sprintf('%s', $this->path));
+        $this->client->submitForm('Supprimer', [], 'GET');
+
+        self::assertCount($numObjsInRepo - 1, $this->repository->findAll());
+        self::assertResponseRedirects('/tasks/');
+    }
+
     public function testRemoveIfUserNotConnected(): void
     {
         $this->databaseTool->loadFixtures([
