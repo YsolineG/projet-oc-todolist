@@ -135,18 +135,32 @@ class TaskController extends AbstractController
     /**
      * @Route("/{id}/delete", name="task_delete", methods={"GET"})
      */
-    public function deleteTaskAction(Task $task, TaskRepository $taskRepository): Response
+    public function deleteTaskAction(Task $task, TaskRepository $taskRepository, UserRepository $userRepository): Response
     {
         $user = $this->getUser();
         $userTask = $task->getUser();
-        if($user && ($user === $userTask || in_array("ROLE_ADMIN", $user->getRoles()))) {
-            $taskRepository->remove($task, true);
 
-            $this->addFlash('success', 'La tâche a bien été supprimée.');
+        if($user && $user === $userTask){
+            return $this->deleteTaskAndRedirect($task, $taskRepository);
+        }
 
-            return $this->redirectToRoute('task_list', [], Response::HTTP_SEE_OTHER);
+        if($user && in_array("ROLE_ADMIN", $user->getRoles())) {
+            $anonymousUser = $userRepository->getAnonymousUser();
+
+            if($userTask === $anonymousUser || $user === $userTask) {
+                return $this->deleteTaskAndRedirect($task, $taskRepository);
+            }
         }
 
         return new Response("Vous n'avez pas accès à cette page", Response::HTTP_UNAUTHORIZED);
+    }
+
+    private function deleteTaskAndRedirect(Task $task, TaskRepository $taskRepository): \Symfony\Component\HttpFoundation\RedirectResponse
+    {
+        $taskRepository->remove($task, true);
+
+        $this->addFlash('success', 'La tâche a bien été supprimée.');
+
+        return $this->redirectToRoute('task_list', [], Response::HTTP_SEE_OTHER);
     }
 }
